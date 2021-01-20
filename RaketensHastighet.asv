@@ -76,7 +76,7 @@ while Mw > 0 % Kör loopen tills massan vatten i flaskan är noll
     % MwT i delar
     MwT1 = MwPrim(Vwn)
     
-    %% Skarpa differentialekvationer med eulers stegmetod Yk+1 = Yk + f(Yk) * h
+    
     
     % Vwn Vattnets hastighet ut ur flaskan (20) 
     Vwn = Vwn + ((((Sb^2)*(VPa-Patm))/S)*((1/Mw)+(1/(Mb+Ma)))-(((Vwn^2)*Pw)/(2*S))*VwnPrim(Mw) - (Sb/(S*(Mb+Ma)))*(Fd(Vb)+Fm+Wx)) * h
