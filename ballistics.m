@@ -1,4 +1,3 @@
-clear all, close all, clc
 
 % Constants
 atmDens = 1.2754; %kg/m^3

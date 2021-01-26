@@ -9,7 +9,7 @@ mh20 = p*V;  %massan av vattent        [kg]
 ma = 0.100;      %Massan av raketen    [kg]   
 g = 9.82;    %gravitations konstanten
 mave = (ma + (mh20/2));   %mass of rocket   [kg]
-o = 60;      %vinkeln         [grader]
+o = 45;      %vinkeln         [grader]
 Vml = V*1000;
 Dc = 0.3; %drag coefficient
 

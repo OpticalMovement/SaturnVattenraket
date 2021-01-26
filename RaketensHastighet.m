@@ -7,22 +7,22 @@ function [Vb, time] = RaketensHastighet
 clc
 close all
 clear
-
+format short
 %% Konstanter
-Patm = 1.2754; % kg/m^3
+Patm = 1.0248; % 1005 mbar = 101300 N/m2
 u = 0.1; % Friktionskonstanten från rampen
 Angle = 45; % Startvinkel i grader
 g = 9.82; % m/s^2
-Mb = 0.107; % Raketens tomma massa, 0.1 kg
+Mb = 0.133; % Raketens tomma massa, 0.107 kg
 Ma = 0.001225*1.5; % Luftens massa, 1,225 g/l * 1,5 liter  
 Pw = 997; % Vattnets densitet kg/m3
-Pa0 = 2; % 2 Bar som en höftning
+Pa0 = 7*Patm; % 2 Bar som en höftning, 20394 kg/m2
 Vol = 0.001564; % Flaskans volym i kubikmeter
 Vw0 = 0.5; % Vattnets volym, 33% fylld flaska, 0,5 l 
-FlaskaRadie = 0.0881/2; % Flaskans ytterdiameter
-Sb = 2*pi*FlaskaRadie; % Cross sectional area of the rocket, 0.0881 m
-S = 0.0205; % Innerdiameter flaskans mynning
-Cd = 0.345; % Dragcoefficient
+FlaskaRadie = 0.0881/2; % Flaskans ytterdiameter 0.0881/2
+Sb = pi*FlaskaRadie^2; % Tvärsnittsarea flaskan pi*r^2
+S = pi*(0.0205/2)^2; % Tvärsnittsarea flaskans mynning pi*r^2 
+Cd = 0.36; % Dragcoefficient 0.345
 Ips = 1.4; % För monatomic ideal gas (wikipedia) 
 
 h = 0.01; %Steglängd
@@ -42,9 +42,7 @@ VbPrim = @(xVwn, Pa) Sb*(Pa - Patm) - ((((Sb-S)^2)/(2*Sb))*(Pw*xVwn^2));
 % Vwn - vattnets förändringshastighet (20) - integraldelen
 VwnPrim = @(xMw) ((Sb^2-S^2)/xMw) + ((Sb - S)^2)/(Mb+Ma);
 % Vpa - Lufttryckets förändringshastighet
-VPaPrim = @(xVwn, Pa) ((-Ips*Pa^(Ips+1/Ips))/((Vol-Vw0)*Pa0^(1/Ips)))*xVwn*S;
-
-%% Variabler som ändras i loopen
+VPaPrim = @(xVwn, Pa) ((-Ips*Pa^((Ips+1)/Ips))/((Vol-Vw0)*Pa0^(1/Ips)))*xVwn*S;
 
 Mw = 0.5; % 0,5 liter vatten = 0,5 kg 
 Pa = Pa0; % Absoluta trycket i flaskan, börjar på Pa0 = 2 bar i vårt fall
@@ -59,9 +57,7 @@ yVb = [];
 Fm = u*(Mb + Ma + Mw)*g*cosd(Angle); % Friktion raket-ramp
 Wx = (Mb + Ma + Mw)*g*sind(Angle); % Vikt mot ramp 
 
-while Mw > 0 % Kör loopen tills massan vatten i flaskan är noll
-    
-    time = time + h;
+while time < 0.07 % Kör loopen tills massan vatten i flaskan är noll
     
     % Hastigheter per steg, t ex Vwn = Wn * h, 630 m/s * 0.01 = 6,3 m 
     
@@ -91,38 +87,39 @@ while Mw > 0 % Kör loopen tills massan vatten i flaskan är noll
     %% Skarpa differentialekvationer med eulers stegmetod Yk+1 = Yk + f(Yk) * h
     
     % Vwn Vattnets hastighet ut ur flaskan (20) 
-    Vwn = Vwn + ((((Sb^2)*(Pa-Patm))/S)*((1/Mw)+(1/(Mb+Ma)))-(((Vwn^2)*Pw)/(2*S))*VwnPrim(Mw) - (Sb/(S*(Mb+Ma)))*(Fd(Vb)+Fm+Wx)) * h
-    
-    
-    % VbT Raketens hastighet (19)
-    VbT = VbT + (- ((1/(Mb+Ma))*(Fd(Vb)+Fm+Wx) + (1/(Mb+Ma))*VbPrim(Vwn*h, Pa))) * h
+    VwnNew = Vwn + ((((Sb^2)*(Pa-Patm))/S)*((1/Mw)+(1/(Mb+Ma)))-(((Vwn^2)*Pw)/(2*S))*VwnPrim(Mw) - (Sb/(S*(Mb+Ma)))*(Fd(Vb)+Fm+Wx))*h
     
     % VpA Lufttryckets förändringshastighet
-    VPa = VPa + VPaPrim(Vwn*h, Pa) * h
+    VPaNew = VPa + VPaPrim(Vwn, Pa)*h
+    
+    % VbT Raketens hastighet (19)
+    VbTNew = VbT + (( -(1/(Mb+Ma))*(Fd(Vb)+Fm+Wx) + (1/(Mb+Ma))*VbPrim(Vwn, Pa)))*h
     
     % MwT Massan vattens förändringshastighet
-    MwT = MwT + MwPrim(Vwn*h) * h;  
+    MwTNew = MwT + MwPrim(Vwn)*h
     
+
     % Vattnets minskning för varje h
-    Mw = Mw + MwT*h;
+    Mw = Mw - MwTNew*h;
     disp("MwT")
     disp(MwT)
     
     % Pa, Trycket i flaskans minskning för varje h
-    Pa = Pa + VPa*h;
+    Pa = Pa - VPaNew*h;
     disp("Pa")
     disp(Pa)
-    
-  
-    
+
     Vb = VbT*time;
+    
+    Vwn = VwnNew;
+    VPa = VPaNew;
+    VbT = VbTNew;
+    MwT = MwTNew;
     
     yVb(end+1) = Vb;
     
-    disp("X: ")
-    disp(x)
-    disp("Mw: ")
-    disp(Mw)
+    time = time + h;
+
     disp("Vb: ")
     disp(Vb)
     disp("Time: ")
@@ -133,9 +130,9 @@ end
 
 
 
-plot(time, yVb)
-ylabel("Flaskans Hastighet (Vb)")
-xlabel("Tid (s)")
+%plot(time, yVb)
+%ylabel("Flaskans Hastighet (Vb)")
+%xlabel("Tid (s)")
 
 end
 
